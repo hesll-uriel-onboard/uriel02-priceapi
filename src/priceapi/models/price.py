@@ -13,12 +13,12 @@ class Price:
 	def __init__(self, coin_name: str, arr: list) -> None:
 		# assert len(arr) == 11
 		self.coin_name = coin_name
-		self.time_opened: int = arr[Index.TIME_OPENED.value] / 1000
-		self.time_closed: int = arr[Index.TIME_CLOSED.value] / 1000
-		self.price_opened: float = arr[Index.PRICE_OPENED.value]
-		self.price_closed: float = arr[Index.PRICE_CLOSED.value]
-		self.price_high: float  = arr[Index.PRICE_HIGH.value]
-		self.price_low: float = arr[Index.PRICE_LOW.value]
+		self.time_opened: float = float(arr[Index.TIME_OPENED.value]) / 1000
+		self.time_closed: float = float(arr[Index.TIME_CLOSED.value]) / 1000
+		self.price_opened: float = float(arr[Index.PRICE_OPENED.value])
+		self.price_closed: float = float(arr[Index.PRICE_CLOSED.value])
+		self.price_high: float  = float(arr[Index.PRICE_HIGH.value])
+		self.price_low: float = float(arr[Index.PRICE_LOW.value])
 
 	def __str__(self) -> str:
 		FORMAT = "%H:%M:%S"
