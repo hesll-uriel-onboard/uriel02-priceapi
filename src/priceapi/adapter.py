@@ -28,7 +28,7 @@ def to_datetime(millis: int) -> datetime:
 	return datetime.fromtimestamp(millis / 1000.0)
 
 class ServiceInterface(ABC):
-	"""An abstract interface of functionalities, that adapts for every market.
+	"""An abstract interface of functionalities, that adapts for every market exchange.
 
 	Example:
 		```python
