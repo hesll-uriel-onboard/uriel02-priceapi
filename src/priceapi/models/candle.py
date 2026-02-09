@@ -1,23 +1,36 @@
 from datetime import datetime
 
-class Price:
+class Candle:
+	"""Information of a candle.
+
+	Attributes:
+		ticket_base: the symbol of the ticker that is exchanged from.
+		ticket_quote: the symbol of the ticker that is exchanged to.
+		time_opened: the opening time of a candle
+		time_closed: the closing time of a candle.
+		price_opened, price_high, price_low, price_closed, volume: respective to OHLCV.
+	"""
+
 	def __init__(self,
-		coin_name: str,
+		ticker_base: str,
+		ticker_quote: str,
 		time_opened: int,
 		time_closed: int,
 		price_opened: float,
-		price_closed: float,
 		price_high: float,
 		price_low: float,
+		price_closed: float,
+		volume: float
 	) -> None:
-		# assert len(arr) == 11
-		self.coin_name = coin_name
+		self.ticker_base = ticker_base
+		self.ticker_quote = ticker_quote
 		self.time_opened = time_opened
 		self.time_closed = time_closed
 		self.price_opened = price_opened
 		self.price_high = price_high
 		self.price_low = price_low
 		self.price_closed = price_closed
+		self.volume = volume
 
 	def __str__(self) -> str:
 		FORMAT = "%H:%M:%S"
@@ -31,4 +44,4 @@ class Price:
 			f"h {self.price_high}",
 			f"c {self.price_closed}",
 		])
-		return f"{self.coin_name}[{time_data} | {price_data}]"
+		return f"{self.ticker_base}/{self.ticker_quote}[{time_data} | {price_data}]"
