@@ -1,7 +1,8 @@
 from datetime import datetime
-from .adapter import ServiceInterface, BinanceService, to_datetime
+from .service import to_datetime
+from .client import Client
 
-engine: ServiceInterface = BinanceService()
+engine = Client()
 
 def duys_strategy(end_time: datetime) -> dict[str, str]:
 	"""Retrieve the last two finished candles, and return the ratio between the
@@ -18,10 +19,9 @@ def duys_strategy(end_time: datetime) -> dict[str, str]:
 
 	"""
 	FORMAT = "%H:%M:%S"
-	p1, p2 = engine.get_finished_candles("BTC", "1m", end_time)
+	p1, p2 = engine.get_finished_candles("BTC/USDT", "1m", end_time)
 	return {
-		"time": f"{to_datetime(p1.time_opened).strftime(FORMAT)} \
-		-> {to_datetime(p2.time_closed).strftime(FORMAT)}",
+		"time": f"{to_datetime(p1.time_opened).strftime(FORMAT)} -> {to_datetime(p2.time_closed).strftime(FORMAT)}",
 		"price": str(p2.price_closed),
 		"ratio": str(p2.price_closed / p1.price_opened)
 	}

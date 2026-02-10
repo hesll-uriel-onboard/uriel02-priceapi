@@ -5,6 +5,7 @@ from typing import override
 from binance_sdk_spot.rest_api.rest_api import UiKlinesIntervalEnum
 
 from .models.candle import Candle
+from .models.interval import Interval
 from binance_sdk_spot import Spot
 
 def milli_timestamp(time: datetime) -> int:
@@ -43,9 +44,11 @@ class ServiceInterface(ABC):
 	@abstractmethod
 	def get_finished_candles(self,
 		ticker_base: str,
-		interval: str,
+		ticker_quote: str,
+		interval: Interval,
 		end_time: datetime,
-		limit: int = 2
+		limit: int = 2,
+		**kwargs
 	) -> list[Candle]:
 		"""Return the last `limit` **finished** candles
 
@@ -80,13 +83,15 @@ class BinanceService(ServiceInterface):
 	@override
 	def get_finished_candles(self,
 		ticker_base: str,
-		interval: str,
-		end_time: datetime = datetime.now(),
-		limit: int = 2
+		ticker_quote: str,
+		interval: Interval,
+		end_time: datetime,
+		limit: int = 2,
+		**kwargs
 	) -> list[Candle]:
 		"""See base class."""
 		result = self.engine.rest_api.ui_klines(
-			symbol = ticker_base + self.QUOTE,
+			symbol = ticker_base + ticker_quote,
 			interval = self.to_binance_interval(interval),
 			end_time = milli_timestamp(end_time),
 			limit = limit
@@ -98,7 +103,7 @@ class BinanceService(ServiceInterface):
 		for arr in result:
 			ans.append(Candle(
 				ticker_base = ticker_base,
-				ticker_quote = self.QUOTE,
+				ticker_quote = ticker_quote,
 				time_opened = int(arr[self.TIME_OPENED]),
 				time_closed = int(arr[self.TIME_CLOSED]),
 				price_opened = float(arr[self.PRICE_OPENED]),
@@ -109,9 +114,9 @@ class BinanceService(ServiceInterface):
 			))
 		return ans
 
-	def to_binance_interval(self, interval: str) -> UiKlinesIntervalEnum:
+	def to_binance_interval(self, interval: Interval) -> UiKlinesIntervalEnum:
 		"""Convert a interval string to the respective Binance's enum"""
 		for e in UiKlinesIntervalEnum:
-			if e.value == interval:
+			if Interval(e.value).millis == interval.millis:
 				return e
 		raise self.IntervalNotFoundError
