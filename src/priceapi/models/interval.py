@@ -36,13 +36,22 @@ class Interval:
 	}
 
 	def __init__(self, value: str) -> None:
+		if len(value) == 0:
+			raise ValueError
+
 		self._value = value
+		unit = value[-1]
+		if unit not in self.SUFFIX:
+			raise self.InvalidUnitError
+		limit, self._delta = self.SUFFIX[unit]
+
 		try:
-			unit = value[-1]
-			limit, self._delta = self.SUFFIX[unit]
 			amount = int(value[:-1])
 		except Exception:
 			raise ValueError
+		if not 1 <= amount <= limit:
+			raise self.InvalidIntervalError
+
 		self._delta *= amount
 		self._millis = int(self._delta.total_seconds()) * 1000
 		pass
