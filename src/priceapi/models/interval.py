@@ -10,6 +10,8 @@ class Interval:
 		`m` -- minute: `1 <= number <= 59`
 		`h` -- hour: `1 <= number <= 23`
 		`d` -- day: `1 <= number <= 30`
+		`w` -- week: `number == 1`
+		`M` -- month: `number == 1`
 
 	We will not accept month as a unit at the moment.
 
@@ -33,6 +35,8 @@ class Interval:
 		"m": [59, timedelta(minutes=1)],
 		"h": [23, timedelta(hours=1)],
 		"d": [30, timedelta(days=1)],
+		"w": [1, timedelta(weeks=1)],
+		"M": [1, timedelta(days=30)],
 	}
 
 	def __init__(self, value: str) -> None:
@@ -67,3 +71,4 @@ SECOND = Interval("1s")
 MINUTE = Interval("1m")
 HOUR = Interval("1h")
 DAY = Interval("1d")
+WEEK = Interval("1w")

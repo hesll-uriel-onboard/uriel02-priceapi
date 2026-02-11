@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import override
 
+from binance_common.errors import BadRequestError
 from binance_sdk_spot.rest_api.rest_api import UiKlinesIntervalEnum
 
 from .models.candle import Candle
@@ -37,9 +38,14 @@ class ServiceInterface(ABC):
 		result = market.get_finished_candles("BTCUSDT", "1m", datetime.now(), 2)
 		```
 	"""
-	QUOTE = "USDT"
-	class InvalidResponse(Exception):
+
+	class InvalidParameterError(Exception):
+		"""Invalid parameter"""
+	class InvalidResponseError(Exception):
 		pass
+
+
+	QUOTE = "USDT"
 
 	@abstractmethod
 	def get_finished_candles(self,
@@ -50,11 +56,13 @@ class ServiceInterface(ABC):
 		limit: int = 2,
 		**kwargs
 	) -> list[Candle]:
-		"""Return the last `limit` **finished** candles
+		"""Return the last `limit` **finished** candles.
+
+		See `priceapi.client.Client.get_finished_candles(self, asset_pair, interval, end_time, limit, provider)`.
 
 		Example:
 		```
-		result = engine.get_finished_candles(end_time = datetime.now())
+		result = service.get_finished_candles(end_time = datetime.now())
 		```
 
 		TODO:
@@ -65,9 +73,6 @@ class ServiceInterface(ABC):
 class BinanceService(ServiceInterface):
 	"""Implementation of ServiceInterface for Binance"""
 
-	class IntervalNotFoundError(Exception):
-		"""Interval string is not one of the provided interval in Binance"""
-		pass
 	TIME_OPENED: int = 0
 	PRICE_OPENED: int = 1
 	PRICE_HIGH: int = 2
@@ -90,14 +95,30 @@ class BinanceService(ServiceInterface):
 		**kwargs
 	) -> list[Candle]:
 		"""See base class."""
-		result = self.engine.rest_api.ui_klines(
-			symbol = ticker_base + ticker_quote,
-			interval = self.to_binance_interval(interval),
-			end_time = milli_timestamp(end_time),
-			limit = limit
-		).data()
+		binance_interval = self.to_binance_interval(interval)
+		try:
+			result = self.engine.rest_api.ui_klines(
+				symbol = ticker_base + ticker_quote,
+				interval = binance_interval,
+				end_time = milli_timestamp(end_time),
+				limit = limit
+			).data()
+		except BadRequestError as e:
+			if e.status_code is None:
+				raise self.InvalidResponseError("No status code found.")
+
+			code = -e.status_code
+			if code // 100 == 11:	# -11xx: invalid request
+				raise self.InvalidParameterError(e.error_message)
+			else:
+				raise self.InvalidResponseError(e.error_message)
+		except Exception:
+			raise self.InvalidResponseError("Unknown reason.")
+
 		if not isinstance(result, list):
-			raise self.InvalidResponse
+			raise self.InvalidResponseError("The return response is not a list")
+		if len(result) > limit:
+			raise self.InvalidResponseError("The return response is not a list")
 
 		ans = []
 		for arr in result:
@@ -116,7 +137,12 @@ class BinanceService(ServiceInterface):
 
 	def to_binance_interval(self, interval: Interval) -> UiKlinesIntervalEnum:
 		"""Convert a interval string to the respective Binance's enum"""
+		print("here")
 		for e in UiKlinesIntervalEnum:
-			if Interval(e.value).millis == interval.millis:
-				return e
-		raise self.IntervalNotFoundError
+			try:
+				if Interval(e.value).millis == interval.millis:
+					print(e)
+					return e
+			except Interval.InvalidUnitError:
+				pass
+		raise self.InvalidParameterError(f"No such interval as {interval.value}.")
