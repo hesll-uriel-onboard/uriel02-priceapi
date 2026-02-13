@@ -2,8 +2,8 @@ from datetime import datetime
 from enum import Enum
 
 from .models.candle import Candle
-from .service import BinanceService, milli_timestamp, to_datetime
-from .models.interval import Interval
+from .service import BinanceService
+from .models.interval import Interval, nearest_end_interval
 
 class ClientProvider(Enum):
 	"""Enum of Service constructors"""
@@ -44,18 +44,6 @@ class Client():
 					raise ValueError("Base and Quote ticker must not be empty")
 				return base, quote
 		raise ValueError("No separators found")
-	@staticmethod
-	def nearest_interval(time: datetime, interval: Interval) -> datetime:
-		"""Return the nearest finished `end_time` of an interval.
-
-		Seems like all market exchanges' candlesticks chart will yield
-		candles with the first (imaginary) candlestick at timestamp 0
-		(i.e 1970-01-01T00:00:00Z), thus `start_time % interval.millis == 0`
-		and `end_time % interval.millis == interval.millis - 1`
-		"""
-		timestamp = milli_timestamp(time)
-		timestamp -= timestamp % interval.millis + 1
-		return to_datetime(timestamp)
 
 	def get_finished_candles(self,
 		asset_pair: str,
@@ -96,7 +84,7 @@ class Client():
 
 		base, quote = self.split_symbols(asset_pair)
 		real_interval: Interval = Interval(interval)
-		end_time = self.nearest_interval(end_time, real_interval)
+		end_time = nearest_end_interval(end_time, real_interval)
 
 		service = (provider.value)()
 		return service.get_finished_candles(

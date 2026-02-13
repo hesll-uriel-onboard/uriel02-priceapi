@@ -1,5 +1,7 @@
+from dataclasses import dataclass
 from datetime import datetime
 
+@dataclass
 class Candle:
 	"""Information of a candle.
 
@@ -11,37 +13,26 @@ class Candle:
 		price_opened, price_high, price_low, price_closed, volume: respective to OHLCV.
 	"""
 
-	def __init__(self,
-		ticker_base: str,
-		ticker_quote: str,
-		time_opened: int,
-		time_closed: int,
-		price_opened: float,
-		price_high: float,
-		price_low: float,
-		price_closed: float,
-		volume: float
-	) -> None:
-		self.ticker_base = ticker_base
-		self.ticker_quote = ticker_quote
-		self.time_opened = time_opened
-		self.time_closed = time_closed
-		self.price_opened = price_opened
-		self.price_high = price_high
-		self.price_low = price_low
-		self.price_closed = price_closed
-		self.volume = volume
+	base_ticker: str
+	quote_ticker: str
+	opening_time: int
+	closing_time: int
+	open_price: float
+	high_price: float
+	low_price: float
+	close_price: float
+	volume: float
 
 	def __str__(self) -> str:
 		FORMAT = "%H:%M:%S"
 		time_data = "->".join([
-			f"{datetime.fromtimestamp(self.time_opened / 1000.0).strftime(FORMAT)}",
-			f"{datetime.fromtimestamp(self.time_closed / 1000.0).strftime(FORMAT)}",
+			f"{datetime.fromtimestamp(self.opening_time / 1000.0).strftime(FORMAT)}",
+			f"{datetime.fromtimestamp(self.closing_time / 1000.0).strftime(FORMAT)}",
 		])
 		price_data = " ".join([
-			f"o {self.price_opened}",
-			f"l {self.price_low}",
-			f"h {self.price_high}",
-			f"c {self.price_closed}",
+			f"o {self.open_price}",
+			f"l {self.low_price}",
+			f"h {self.high_price}",
+			f"c {self.close_price}",
 		])
-		return f"{self.ticker_base}/{self.ticker_quote}[{time_data} | {price_data}]"
+		return f"{self.base_ticker}/{self.quote_ticker}[{time_data} | {price_data}]"

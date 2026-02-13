@@ -1,52 +1,51 @@
+from priceapi.service import milli_timestamp
+import pytest
 from datetime import datetime, timedelta
 import random
-from priceapi.models.interval import Interval, SECOND, MINUTE, HOUR, DAY
+from priceapi.models.interval import MINUTE, Interval, InvalidUnitError, InvalidIntervalError, nearest_end_interval, to_datetime
 random.seed(datetime.now().timestamp())
 
-def test_valid_unit():
-	assert SECOND.delta == timedelta(seconds=1) and SECOND.millis == 1000
-	assert MINUTE.delta == timedelta(minutes=1) and MINUTE.millis == 1000 * 60
-	assert HOUR.delta == timedelta(hours=1) and HOUR.millis == 1000 * 60 * 60
-	assert DAY.delta == timedelta(days=1) and DAY.millis == 1000 * 60 * 60 * 24
+@pytest.mark.parametrize("interval_string, expected_delta", [
+	("1s", timedelta(seconds = 1)),
+	("15m", timedelta(minutes = 15)),
+	("2h", timedelta(hours = 2)),
+	("3d", timedelta(days = 3)),
+	("1w", timedelta(weeks = 1)),
+	("1M", timedelta(days = 30)),
+])
+def test_valid_intervals(interval_string: str, expected_delta: timedelta):
+	interval = Interval(interval_string)
+	assert interval.delta == expected_delta
+	assert interval.millis == milli_timestamp(datetime.fromtimestamp(0) + expected_delta)
 
-def test_arbitrary_interval():
-	for unit, delta in [
-		["s", timedelta(seconds=1)],
-		["m", timedelta(minutes=1)],
-		["h", timedelta(hours=1)],
-		["d", timedelta(days=1)],
-	]:
-		limit = Interval.SUFFIX[unit][0]
-		number = random.randint(1, limit)
-		interval_value = str(number) + unit
-		interval_delta: timedelta = delta * number
-		interval_millis = interval_delta.total_seconds() * 1000
+@pytest.mark.parametrize("interval_string", ["1k", "2x"])
+def test_invalid_unit_error(interval_string):
+	with pytest.raises(InvalidUnitError):
+		Interval(interval_string)
 
-		interval = Interval(interval_value)
-		assert interval.delta == interval_delta
-		assert interval.millis == interval_millis
+@pytest.mark.parametrize("interval_string", ["0s", "0m", "0h", "0d", "0w", "0m"])
+def test_zero_error(interval_string):
+	with pytest.raises(InvalidIntervalError):
+		Interval(interval_string)
 
-def test_invalid_unit_error():
-	try:
-		Interval("1k")
-	except Interval.InvalidUnitError:
-		assert True
-	else:
-		assert False
+@pytest.mark.parametrize("interval_string", ["61s", "61m", "25h", "31d", "5w", "13M"])
+def test_number_too_large_error(interval_string):
+	with pytest.raises(InvalidIntervalError):
+		Interval(interval_string)
 
-def test_invalid_interval_error():
-	for unit, delta in [
-		["s", timedelta(seconds=1)],
-		["m", timedelta(minutes=1)],
-		["h", timedelta(hours=1)],
-		["d", timedelta(days=1)],
-	]:
-		number = Interval.SUFFIX[unit][0] + 1
-		interval_value = str(number) + unit
-		print(interval_value)
-		try:
-			Interval(interval_value)
-		except Interval.InvalidIntervalError:
-			assert True
-		else:
-			assert False
+@pytest.mark.parametrize("interval_string", ["as", "6em", "!!h"])
+def test_not_a_number(interval_string):
+	with pytest.raises(InvalidIntervalError):
+		Interval(interval_string)
+
+
+@pytest.mark.parametrize("time, interval", [
+	(to_datetime(100*1000), MINUTE),
+	(to_datetime(60*1000-1), MINUTE),
+])
+def test_nearest_end_interval(time: datetime, interval: Interval):
+	result = nearest_end_interval(time, interval)
+	print(milli_timestamp(time), interval.millis, milli_timestamp(result), result.timestamp())
+	assert milli_timestamp(result) > 0
+	assert milli_timestamp(result) % interval.millis == interval.millis - 1
+	assert result + interval.delta > time
